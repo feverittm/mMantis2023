@@ -5,7 +5,10 @@
 package frc.robot;
 
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.subsystems.AddressableLed;
+import frc.robot.subsystems.Claw;
 import frc.robot.subsystems.Drivetrain;
+import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -19,12 +22,16 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final Drivetrain m_robotDrive = new Drivetrain();
+  private final AddressableLed m_led = new AddressableLed();
+  private final Claw m_claw = new Claw();
 
   // Replace with CommandPS4Controller or CommandJoystick if needed
   private final CommandXboxController m_driverController =
       new CommandXboxController(OperatorConstants.kDriverControllerPort);
 
   private final Command m_toggleShifter = Commands.runOnce(m_robotDrive::toggleShifter);
+  private final Command m_toggleClaw = Commands.runOnce(m_claw::toggleClaw);
+
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -40,5 +47,6 @@ public class RobotContainer {
             m_robotDrive));
 
     m_driverController.a().onTrue(m_toggleShifter);
+    m_driverController.b().onTrue(m_toggleClaw);
   }
 }
