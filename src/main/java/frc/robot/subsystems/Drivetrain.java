@@ -11,6 +11,7 @@ import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
@@ -28,10 +29,10 @@ public class Drivetrain extends SubsystemBase {
   private final DifferentialDrive m_drive;
   private AHRS gyro;
   private Solenoid shiftSolenoid;
-  private RelativeEncoder RightMotorEncoder;
-  private RelativeEncoder LeftMotorEncoder;
-  private static boolean shift_state = false;
-
+  private RelativeEncoder rightMotorEncoder;
+  private RelativeEncoder leftMotorEncoder;
+  private Encoder rightWheelEncoder;
+  private Encoder leftWheelEncoder;
 
   /**
    * Creates a Drivetrain subsystem with 4 Neo motors arranged 2 on
@@ -45,10 +46,15 @@ public class Drivetrain extends SubsystemBase {
     backRight = new CANSparkMax(Constants.SUBSYSTEM.DRIVETRAIN.BACK_RIGHT_CAN_ID, MotorType.kBrushless);
     backLeft = new CANSparkMax(Constants.SUBSYSTEM.DRIVETRAIN.BACK_LEFT_CAN_ID, MotorType.kBrushless);
 
-
     shiftSolenoid = new Solenoid(PneumaticsModuleType.REVPH, 0);
-    RightMotorEncoder = frontRight.getEncoder();
-    LeftMotorEncoder = frontLeft.getEncoder();
+
+    rightMotorEncoder = frontRight.getEncoder();
+    leftMotorEncoder = frontLeft.getEncoder();
+
+    rightWheelEncoder = new Encoder(Constants.SUBSYSTEM.DRIVETRAIN.RIGHT_ENCODER_CHANNEL_A,
+        Constants.SUBSYSTEM.DRIVETRAIN.RIGHT_ENCODER_CHANNEL_B, false);
+    leftWheelEncoder = new Encoder(Constants.SUBSYSTEM.DRIVETRAIN.LEFT_ENCODER_CHANNEL_A,
+        Constants.SUBSYSTEM.DRIVETRAIN.LEFT_ENCODER_CHANNEL_B, false);
 
     frontRight.restoreFactoryDefaults();
     frontLeft.restoreFactoryDefaults();
@@ -63,7 +69,7 @@ public class Drivetrain extends SubsystemBase {
     frontRight.setInverted(false);
     backRight.setInverted(false);
 
-    m_drive = new DifferentialDrive(backRight, backLeft);
+    m_drive = new DifferentialDrive(frontRight, frontLeft);
 
     try {
       /* Communicate w/navX-MXP via the MXP SPI Bus. */
@@ -78,15 +84,14 @@ public class Drivetrain extends SubsystemBase {
     }
 
     resetEncoders();
-    resetGyroAngle();
   }
 
   /**
    * Sets the position of the two measured motor encoders to zero.
    */
   public void resetEncoders() {
-    LeftMotorEncoder.setPosition(0);
-    RightMotorEncoder.setPosition(0);
+    leftMotorEncoder.setPosition(0);
+    rightMotorEncoder.setPosition(0);
   }
 
   public void arcadeDrive(double fwd, double rot) {
@@ -94,12 +99,10 @@ public class Drivetrain extends SubsystemBase {
   }
 
   /**
-   * Sets the left and right values for the drivetrain motors.
+   * Sets the left and right values for the drivetrain motors power.
    * 
    * @param right : Value between [-1,1] (inclusive) to set the right-side motors
-   *              to.
    * @param left  : Value between [-1,1] (inclusive) to set the left-side motors
-   *              to.
    */
   public void basicMove(double right, double left) {
     frontLeft.set(left);
@@ -130,7 +133,7 @@ public class Drivetrain extends SubsystemBase {
    *         Y axis).
    */
   public double getGyroAngle() {
-      return gyro.getAngle();
+    return gyro.getAngle();
   }
 
   /**
@@ -138,25 +141,43 @@ public class Drivetrain extends SubsystemBase {
    * angle, do not call this during a match.
    */
   public void resetGyroAngle() {
-      gyro.reset();
+    gyro.reset();
   }
 
   /**
-   * Returns the displacement of the right encoder.
+   * Returns the displacement of the right motor encoder.
    * 
    * @return The position of the measuring right motor encoder (encoder ticks).
    */
-  public double getRightSensorPosition() {
-    return RightMotorEncoder.getPosition();
+  public double getRightMotorPosition() {
+    return rightMotorEncoder.getPosition();
   }
 
   /**
-   * Returns the displacement of the left encoder.
+   * Returns the displacement of the encoder on the right gearbox output shaft.
+   * 
+   * @return The position of the measuring right wheel encoder (encoder ticks).
+   */
+  public double getRightWheelPosition() {
+    return rightWheelEncoder.getRaw();
+  }
+
+  /**
+   * Returns the displacement of the left motor encoder.
    * 
    * @return The position of the measuring left motor encoder (encoder ticks).
    */
-  public double getLeftSensorPosition() {
-    return LeftMotorEncoder.getPosition();
+  public double getLeftMotorPosition() {
+    return leftMotorEncoder.getPosition();
+  }
+
+  /**
+   * Returns the displacement of the left wheel encoder.
+   * 
+   * @return The position of the measuring left gearbox encoder (encoder ticks).
+   */
+  public double getLeftWheelPosition() {
+    return leftWheelEncoder.getRaw();
   }
 
   /**
@@ -165,8 +186,8 @@ public class Drivetrain extends SubsystemBase {
    * @return The velocity of the measuring right motor encoder (encoder ticks
    *         per second).
    */
-  public double getRightSensorVelocity() {
-    return 10 * RightMotorEncoder.getVelocity();
+  public double getRightMotorVelocity() {
+    return 10 * rightMotorEncoder.getVelocity();
   }
 
   /**
@@ -175,25 +196,28 @@ public class Drivetrain extends SubsystemBase {
    * @return The velocity of the measuring left motor encoder (encoder ticks per
    *         second).
    */
-  public double getLeftSensorVelocity() {
-    return -10 * RightMotorEncoder.getVelocity();
+  public double getLeftMotorVelocity() {
+    return -10 * leftMotorEncoder.getVelocity(); 
   }
 
   public void toggleShifter() {
-    if (shift_state) {
-      shift_state = false;
-      shiftSolenoid.set(false);
-    } else {
-      shift_state = true;
-      shiftSolenoid.set(true);
-    }
+    shiftSolenoid.toggle();
   }
 
   @Override
   public void periodic() {
-    SmartDashboard.putNumber("left actual v",
-        getLeftSensorVelocity());
-    SmartDashboard.putNumber("right actual v",
-        getRightSensorVelocity());
+    SmartDashboard.putBoolean("shifter Position", shiftSolenoid.get());
+    SmartDashboard.putNumber("left motor encoder count",
+        getLeftMotorPosition());
+    SmartDashboard.putNumber("right motor encoder count",
+        getRightMotorPosition());
+    SmartDashboard.putNumber("left motor actual v",
+        getLeftMotorVelocity());
+    SmartDashboard.putNumber("right motor actual v",
+        getRightMotorVelocity());
+    SmartDashboard.putNumber("left wheel encoder",
+        getLeftWheelPosition());
+    SmartDashboard.putNumber("right wheel encoder",
+        getRightWheelPosition());
   }
 }
