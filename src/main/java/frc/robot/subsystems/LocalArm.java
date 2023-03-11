@@ -89,6 +89,10 @@ public class LocalArm extends SubsystemBase {
     return localArmAnalogSensor.getVoltage();
   }
 
+  public void driveLocalArm(double speed) {
+    rightLocalMotor.set(speed);
+  }
+
   @Override
   public void periodic() {
     SmartDashboard.putNumber("Local Arm Analog", getLocalArmAngle());
