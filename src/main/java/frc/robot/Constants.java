@@ -98,6 +98,12 @@ public final class Constants {
             public static final boolean SOLENOID_INVERTED = false;
         }
 
+        public static final class INTAKE {
+            public static final int SOLENOID_CHANNEL = 15;
+            public static final boolean SOLENOID_INVERTED = false;
+            public static final int FRONT_RIGHT_CAN_ID = 9;
+            public static final int BACK_RIGHT_CAN_ID = 10;
+        }
         public static final class INERTIAL_MEASUREMENT {
             public static final Rotation3d ROBOT_TO_NAVX = new Rotation3d(0, 0, 0);
         }
