@@ -102,6 +102,10 @@ public class LocalArm extends SubsystemBase {
     return localArmPot.get();
   }
 
+  public void driveLocalArm(double speed) {
+    rightLocalMotor.set(speed);
+  }
+
   @Override
   public void periodic() {
     SmartDashboard.putNumber("Local Arm Sensor Voltage", getLocalArmInput());
