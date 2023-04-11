@@ -10,6 +10,7 @@ import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.wpilibj.AnalogPotentiometer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -28,7 +29,8 @@ public class LocalArm extends SubsystemBase {
 
   private RelativeEncoder rightMotorEncoder;
   private RelativeEncoder leftMotorEncoder;
-  private AnalogInput localArmAnalogSensor;
+  private AnalogPotentiometer localArmPot;
+  private AnalogInput localArmInput;
 
   public LocalArm() {
     rightLocalMotor = new CANSparkMax(Constants.SUBSYSTEM.ARM.LEFT_LOCAL_NEO_CAN_ID, MotorType.kBrushless);
@@ -37,7 +39,9 @@ public class LocalArm extends SubsystemBase {
     rightMotorEncoder = rightLocalMotor.getEncoder();
     leftMotorEncoder = leftLocalMotor.getEncoder();
 
-    localArmAnalogSensor = new AnalogInput(Constants.SUBSYSTEM.ARM.LOCAL_POTENTIOMETER_ANALOG_CHANNEL);
+    localArmInput = new AnalogInput(Constants.SUBSYSTEM.ARM.LOCAL_POTENTIOMETER_ANALOG_CHANNEL);
+    localArmInput.setAverageBits(2);
+    localArmPot = new AnalogPotentiometer(localArmInput);
 
     rightLocalMotor.restoreFactoryDefaults();
     leftLocalMotor.restoreFactoryDefaults();
@@ -46,6 +50,7 @@ public class LocalArm extends SubsystemBase {
 
     rightLocalMotor.setInverted(Constants.SUBSYSTEM.ARM.RIGHT_LOCAL_NEO_INVERTED);
     leftLocalMotor.setInverted(Constants.SUBSYSTEM.ARM.LEFT_LOCAL_NEO_INVERTED);
+    setMotorNeutralMode(IdleMode.kBrake);
   }
 
   /**
@@ -85,12 +90,21 @@ public class LocalArm extends SubsystemBase {
    * 
    * @return The angle from the poteniometer
    */
+  public double getLocalArmInput() {
+    return localArmInput.getVoltage();
+  }
+  /**
+   * Returns the value of the analog poteniometer
+   * 
+   * @return The angle from the poteniometer
+   */
   public double getLocalArmAngle() {
-    return localArmAnalogSensor.getVoltage();
+    return localArmPot.get();
   }
 
   @Override
   public void periodic() {
+    SmartDashboard.putNumber("Local Arm Sensor Voltage", getLocalArmInput());
     SmartDashboard.putNumber("Local Arm Analog", getLocalArmAngle());
     SmartDashboard.putNumber("Local Arm Motor Encoder", getRightMotorPosition());
   }
