@@ -70,6 +70,7 @@ public class Drivetrain extends SubsystemBase {
     backRight.setInverted(false);
 
     m_drive = new DifferentialDrive(frontRight, frontLeft);
+    shiftSolenoid.set(false);
 
     try {
       /* Communicate w/navX-MXP via the MXP SPI Bus. */
@@ -207,6 +208,7 @@ public class Drivetrain extends SubsystemBase {
   @Override
   public void periodic() {
     SmartDashboard.putBoolean("shifter Position", shiftSolenoid.get());
+    SmartDashboard.putNumber("gyro angle", getGyroAngle());
     SmartDashboard.putNumber("left motor encoder count",
         getLeftMotorPosition());
     SmartDashboard.putNumber("right motor encoder count",
